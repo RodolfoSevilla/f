@@ -1,48 +1,41 @@
-#include "project04.h"
+#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
 
-int main(int argc, char **argv) {
+#include <netinet/in.h>
 
-    struct scan_table_st scan_table; // table of tokens
-    struct parse_table_st parse_table; // table of parse nodes
-    struct parse_node_st *parse_tree; // tree (pointers only) of parse nodes
+#define BUF_SIZE 500;
 
-    char input[SCAN_INPUT_LEN];
-    int len;
-	 if ((argc != 5) || (strncmp(argv[3], "-b", SCAN_TOKEN_LEN) != 0) ) {	
-     if ((argc != 3) || (strncmp(argv[1], "-e", SCAN_TOKEN_LEN) != 0) ) {
-        printf("usage: ./lab03 -e \"expr\"\n");
-        printf("  example: ./lab03 -e \"1 + 2\"\n");
-        exit(-1);
+int main(int argc, char *argv[])
+{
+
+if (argc != 2) {
+        fprintf(stderr, "Usage: %s port\n", argv[0]);
+        exit(EXIT_FAILURE);
     }
-    }
-    
-	
-    strncpy(input, argv[2], SCAN_INPUT_LEN);
-    len = strnlen(input, SCAN_INPUT_LEN);
+int soc = socket(PF_INET,SOCK_DGRAM,IPPROTO_UDP);
+int i = 1;
+ setsockopt (soc,SOL_SOCKET,SO_BROADCAST,&i,sizeof(i));
+char str[50] = "Online: ";
 
-    scan_table_init(&scan_table);
-    scan_table_scan(&scan_table, input, len);
-    // You may uncomment this if you need to debug the scanner 
-    // but leave it commented for "grade test" since scanner output
-    // is not part of the expected output for lab03
-    // scan_table_print(&scan_table);
+strcat(str, argv[1]) ;
+//strcat(str, "\0");
+printf("%s\n",str);
+struct sockaddr_in hints;
+    hints.sin_family = AF_INET;    // Allow IPv4 or IPv6
+    hints.sin_port = htons(8221);
+     inet_pton(PF_INET,"10.10.13.255",&hints.sin_addr);
 
-    parse_table_init(&parse_table);
-    parse_tree = parse_program(&parse_table, &scan_table);
-    //parse_tree_print(parse_tree);
- 	int result = evalute(parse_tree); 
- 	printf("%d\n",result);
- 	if((strncmp(argv[4], "10", SCAN_TOKEN_LEN) == 0) ){
- 		valueString(result, 10);	
- 	}
- 	else if((strncmp(argv[4], "2", SCAN_TOKEN_LEN) == 0) ){
- 		valueString(result, 2);	
- 	}
- 	else if((strncmp(argv[4], "16", SCAN_TOKEN_LEN) == 0) ){
- 		valueString(result, 16);	
- 	}			
- 	
-		
- 		
-    return 0;
+     sendto(soc, str, strlen(str), 0, (const struct sockaddr *)&hints , sizeof(hints));
+sleep(2);
+char str2[50] = "Offline: ";
+strncat(str2, argv[1],strlen(argv[1])) ;
+strncat(str2, "\0", 1);
+sendto(soc, str2, strlen(str2), 0, (const struct sockaddr *)&hints , sizeof(hints));
+printf("%s\n",str2);
 }
